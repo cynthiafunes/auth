@@ -6,8 +6,8 @@ router.post('/register', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const usuario_existente = await User.findOne({ where: { email } });
-    if (usuario_existente) {
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
       return res.status(400).json({ message: 'El email ya esta registrado' });
     }
 
@@ -31,8 +31,8 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Usuario no encontrado' });
     }
 
-    // por ahora comparacion simple
-    if (user.password !== password) {
+    const validPassword = await user.checkPassword(password);
+    if (!validPassword) {
       return res.status(400).json({ message: 'Contraseña incorrecta' });
     }
 
