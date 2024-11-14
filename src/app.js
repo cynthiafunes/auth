@@ -3,6 +3,7 @@ const { sequelize, conn } = require('./config/database');
 const authRoutes = require('./routes/auth');
 require('dotenv').config();
 const PORT = process.env.PORT || 3000;
+const initRoles = require('./config/initRoles');
 
 const app = express();
 
@@ -13,6 +14,7 @@ const start = async () => {
   try {
     await conn();
         await sequelize.sync();
+        await initRoles();
     
     app.listen(PORT, () => {
       console.log(`Server running on port  ${PORT}`);

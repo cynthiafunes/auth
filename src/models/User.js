@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 const bcrypt = require('bcrypt');
+const Role = require('./Role');
 
 const User = sequelize.define('User', {
   email: {
@@ -16,6 +17,9 @@ const User = sequelize.define('User', {
     allowNull: false
   }
 });
+
+User.belongsTo(Role);
+Role.hasMany(User);
 
 User.beforeCreate(async (user) => {
     const salt = await bcrypt.genSalt(10);
