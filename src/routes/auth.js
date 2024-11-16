@@ -10,6 +10,8 @@ const BLOCK_DURATION = 10 * 60 * 1000;
 
 router.post('/register', async (req, res) => {
   try {
+    console.log('Body recibido:', req.body);
+
     const { email, password, useJWT } = req.body;
 
     const existingUser = await User.findOne({ where: { email } });

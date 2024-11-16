@@ -7,8 +7,11 @@ const initRoles = require('./config/initRoles');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const protectedRoutes = require('./routes/protected');
+const xssClean = require('xss-clean');
 
 const app = express();
+app.use(express.json());
+app.use(xssClean());
 
 app.use(cookieParser());
 app.use(session({
@@ -25,7 +28,6 @@ app.use(session({
   }
 }));
 
-app.use(express.json());
 app.use('/', authRoutes);
 app.use('/protected', protectedRoutes);
 
