@@ -5,6 +5,9 @@ const Role = require('../models/Role');
 const { generateToken } = require('../config/jwt');
 const jwtAuth = require('../middleware/jwtAuth');
 
+const MAX_LOGIN_ATTEMPTS = 3;
+const BLOCK_DURATION = 10 * 60 * 1000;
+
 router.post('/register', async (req, res) => {
   try {
     const { email, password, useJWT } = req.body;
@@ -62,10 +65,44 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Usuario no encontrado' });
     }
 
+    if (user.isBlocked && user.blockedUntil > new Date()) {
+      const remainingTime = Math.ceil((user.blockedUntil - new Date()) / 1000 / 60);
+      return res.status(403).json({ 
+        message: `Cuenta bloqueada. Intenta de nuevo en ${remainingTime} minutos` 
+      });
+    }
+
+    if (user.isBlocked && user.blockedUntil <= new Date()) {
+      user.isBlocked = false;
+      user.loginAttempts = 0;
+      await user.save();
+    }
+
     const validPassword = await user.checkPassword(password);
     if (!validPassword) {
-      return res.status(400).json({ message: 'Contraseña incorrecta' });
+      user.loginAttempts += 1;
+
+      if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        user.isBlocked = true;
+        user.blockedUntil = new Date(Date.now() + BLOCK_DURATION);
+        await user.save();
+        
+        return res.status(403).json({ 
+          message: 'Cuenta bloqueada. Por favor, intenta más tarde.' 
+        });
+      }
+
+      await user.save();
+
+      return res.status(400).json({ 
+        message: `Contraseña incorrecta. Te quedan ${MAX_LOGIN_ATTEMPTS - user.loginAttempts} intentos` 
+      });
     }
+
+    user.loginAttempts = 0;
+    user.isBlocked = false;
+    user.blockedUntil = null;
+    await user.save();
 
     if (useJWT) {
       const token = generateToken(user);
