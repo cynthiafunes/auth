@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Role = require('../models/Role');
+const { generateToken } = require('../config/jwt');
+const jwtAuth = require('../middleware/jwtAuth');
 
 router.post('/register', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, useJWT } = req.body;
 
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
@@ -26,6 +28,15 @@ router.post('/register', async (req, res) => {
       RoleId: userRole.id
     });
 
+    if (useJWT) {
+      const token = generateToken({ ...newUser.toJSON(), Role: userRole });
+      return res.status(201).json({ 
+        message: 'Usuario registrado exitosamente',
+        role: userRole.name,
+        token
+      });
+    }
+
     req.session.userId = newUser.id;
     req.session.userRole = userRole.name;
 
@@ -40,7 +51,7 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, useJWT } = req.body;
 
     const user = await User.findOne({ 
         where: { email },
@@ -54,6 +65,15 @@ router.post('/login', async (req, res) => {
     const validPassword = await user.checkPassword(password);
     if (!validPassword) {
       return res.status(400).json({ message: 'Contraseña incorrecta' });
+    }
+
+    if (useJWT) {
+      const token = generateToken(user);
+      return res.json({ 
+        message: 'Login exitoso',
+        role: user.Role.name,
+        token
+      });
     }
 
     req.session.userId = user.id;
@@ -87,6 +107,13 @@ router.get('/check-session', (req, res) => {
   } else {
     res.json({ logged: false });
   }
+});
+
+router.get('/protected', jwtAuth, (req, res) => {
+  res.json({ 
+    message: 'Ruta protegida accedida exitosamente',
+    user: req.user
+  });
 });
 
 module.exports = router;
