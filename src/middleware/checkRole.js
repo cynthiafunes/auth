@@ -7,7 +7,7 @@ function checkRole(roleRequired) {
           });
         }
       }
-      else if (req.session.userRole) {
+      else if (req.session && req.session.userId) {
         if (req.session.userRole !== roleRequired) {
           return res.status(403).json({ 
             message: 'No tenes permiso para acceder a esta ruta' 
