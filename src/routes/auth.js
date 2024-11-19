@@ -136,23 +136,5 @@ router.post('/logout', (req, res) => {
     res.json({ message: 'Sesión cerrada exitosamente' });
   });
 });
-  
-router.get('/check-session', (req, res) => {
-  if (req.session.userId) {
-    res.json({ 
-      logged: true, 
-      role: req.session.userRole 
-    });
-  } else {
-    res.json({ logged: false });
-  }
-});
-
-router.get('/protected', jwtAuth, (req, res) => {
-  res.json({ 
-    message: 'Ruta protegida accedida exitosamente',
-    user: req.user
-  });
-});
 
 module.exports = router;
